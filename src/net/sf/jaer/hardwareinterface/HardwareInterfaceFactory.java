@@ -23,6 +23,7 @@ import net.sf.jaer.util.StartupProfiler;
 import net.sf.jaer.chip.Chip;
 // import net.sf.jaer.hardwareinterface.serial.SpiNNaker.SpiNNaker_InterfaceFactory;
 // import net.sf.jaer.hardwareinterface.serial.eDVS128.eDVS128_InterfaceFactory;
+import ncslab.serial.EEBVHardwareInterfaceFactory;
 import net.sf.jaer.hardwareinterface.opencv.OpenCvCameraFactory;
 import net.sf.jaer.hardwareinterface.udp.UDPInterfaceFactory;
 import net.sf.jaer.hardwareinterface.usb.LibUsbHotplug;
@@ -91,6 +92,7 @@ HardwareInterfaceFactoryInterface, PnPNotifyInterface {
 		NRVHardwareInterfaceFactory.class,
 		PropheseeHardwareInterfaceFactory.class,
 		OpenCvCameraFactory.class,
+		EEBVHardwareInterfaceFactory.class,
 		UDPInterfaceFactory.class,
 		// eDVS / SpiNNaker chooser factories unregistered for now (sources remain)
 		// eDVS128_InterfaceFactory.class,

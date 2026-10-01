@@ -203,6 +203,8 @@ import net.sf.jaer.hardwareinterface.HardwareInterfaceFactory;
 import net.sf.jaer.hardwareinterface.HardwareInterfaceFactoryChooserDialog;
 import net.sf.jaer.hardwareinterface.udp.NetworkChip;
 import net.sf.jaer.hardwareinterface.udp.UDPInterface;
+import ncslab.chip.EEBVGenX320;
+import ncslab.serial.EEBVHardwareInterface;
 import net.sf.jaer.hardwareinterface.opencv.OpenCvCameraFactory;
 import net.sf.jaer.hardwareinterface.opencv.OpenCvCameraHardwareInterface;
 import net.sf.jaer.chip.opencv.OpenCvFrameCamera;
@@ -675,6 +677,7 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
         DVS640.class.getName(),
         NRVS5KRC1S.class.getName(),
         PropheseeIMX636HD.class.getName(),
+        EEBVGenX320.class.getName(),
         DVS1280x720SD.class.getName(),
         OpenCvFrameCamera.class.getName()
     };
@@ -1704,6 +1707,7 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
     private boolean loggedStartupBindMiss;
     /** WAITING polls every ~1 s; log the OpenCV skip once per skip period. */
     private boolean loggedSkipOpenCvAutobind;
+    private boolean loggedSkipEebvAutobind;
 
     private boolean bindRememberedInterfaceIfPossible(int ninterfaces) {
         if (!autobindOnWaiting && !SessionCameraOpenCoordinator.hasOpenGrant(this)) {
@@ -1784,7 +1788,8 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
         for (int i = 0; i < ninterfaces; i++) {
             HardwareInterface hw = factory.getInterface(i);
             if (hw == null || hardwareTakenByOtherViewer(hw) || UDPInterface.class.isInstance(hw)
-                    || hw instanceof OpenCvCameraHardwareInterface) {
+                    || hw instanceof OpenCvCameraHardwareInterface
+                    || hw instanceof EEBVHardwareInterface) {
                 continue;
             }
             if (remembered != null && remembered.matches(hw)) {
@@ -1850,7 +1855,8 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
         for (int i = 0; i < ninterfaces; i++) {
             HardwareInterface hw = factory.getInterface(i);
             if (hw == null || hardwareTakenByOtherViewer(hw) || UDPInterface.class.isInstance(hw)
-                    || hw instanceof OpenCvCameraHardwareInterface) {
+                    || hw instanceof OpenCvCameraHardwareInterface
+                    || hw instanceof EEBVHardwareInterface) {
                 continue;
             }
             if (hardwareReservedForOtherViewer(hw)) {
@@ -1875,7 +1881,8 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
         for (int i = 0; i < ninterfaces; i++) {
             HardwareInterface hw = factory.getInterface(i);
             if (hw == null || hardwareTakenByOtherViewer(hw) || UDPInterface.class.isInstance(hw)
-                    || hw instanceof OpenCvCameraHardwareInterface) {
+                    || hw instanceof OpenCvCameraHardwareInterface
+                    || hw instanceof EEBVHardwareInterface) {
                 continue;
             }
             if (hardwareReservedForOtherViewer(hw)) {
@@ -2079,6 +2086,14 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
                 if (!loggedSkipOpenCvAutobind) {
                     log.info("not auto-opening OpenCV camera (select it from Interface)");
                     loggedSkipOpenCvAutobind = true;
+                }
+                return false;
+            }
+            if (hw instanceof EEBVHardwareInterface) {
+                // opening sends text to the port; never do that to an unconfirmed serial device
+                if (!loggedSkipEebvAutobind) {
+                    log.info("not auto-opening serial port " + hw + " (select it from Interface)");
+                    loggedSkipEebvAutobind = true;
                 }
                 return false;
             }
@@ -2442,6 +2457,14 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
                 log.info("Switching AEChip to OpenCvFrameCamera for " + hw);
                 addChipClassesToMenu(java.util.List.of(OpenCvFrameCamera.class));
                 setAeChipClass(OpenCvFrameCamera.class);
+            }
+            return;
+        }
+        if (hw instanceof EEBVHardwareInterface) {
+            if (!(chip instanceof EEBVGenX320)) {
+                log.info("Switching AEChip to EEBVGenX320 for " + hw);
+                addChipClassesToMenu(java.util.List.of(EEBVGenX320.class));
+                setAeChipClass(EEBVGenX320.class);
             }
             return;
         }
