@@ -66,6 +66,7 @@ Live USB cameras selectable in the AEViewer **AEChip** menu (default list and re
 | **DVS128** | [inilabs](https://inilabs.com/) / [SensorsINI](https://sensors.ini.ch) | DVS 128×128 | USB 2 (FX2) | `DVS128` | Stable |
 | **EVK4 HD** | [Prophesee](https://www.prophesee.ai/) | Sony IMX636 DVS 1280×720 | USB 3 (Cypress) | `PropheseeIMX636HD` | Stable ([notes](src/prophesee/README.md)); also Metavision `.raw` EVT3 playback |
 | **DELTA01** | [NRV](https://nrvcorp.github.io/docs/) | Samsung S5KRC1S DVS 960×720 | USB 3 (FX20/CX3) | `NRVS5KRC1S` | Stable ([notes](src/nrv/README.md)) |
+| **eEBV / PSGX320** | [NCS lab](http://download.ncslab.se) | Prophesee GenX320 DVS 320×320 + IMU | USB-C virtual serial port | `EEBVGenX320` | Experimental ([notes](src/ncslab/README.md)) |
 | **CDAVIS** | [SensorsINI](https://sensors.ini.ch) / [iniVation](https://inivation.com/) | Color APS+DVS 640×480 / 320×240 DVS | USB 3 | `CDAVIS` | Experimental |
 | **SciDVS** | [SensorsINI](https://sensors.ini.ch) | Sensitive 100×114 DVS / Basic APS  | USB 3 | `SciDVS` | Experimental |
 | **CochleaAMS / CochleaLP** | [SensorsINI](https://sensors.ini.ch) / [inilabs](https://inilabs.com/) | Silicon cochlea (audio AER) | USB 2/3 | `CochleaAMS1c`, `CochleaLP`, … | Stable (`CochleaAMS1c`); Experimental (`CochleaLP`) |

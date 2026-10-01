@@ -34,6 +34,7 @@ is a singleton. Registered factories (`HardwareInterfaceFactory.factories`):
 | `LibUsb3HardwareInterfaceFactory` | DAVIS346, SciDVS (same PID), DVXplorer FX3 vs Mini/Micro CX3 (`bcdDevice`), Cochlea FX3 |
 | `NRVHardwareInterfaceFactory` | NRV DELTA01 FX20/CX3 |
 | `PropheseeHardwareInterfaceFactory` | EVK4 HD |
+| `EEBVHardwareInterfaceFactory` | eEBV / PSGX320 (GenX320) on a USB serial port; not libusb, see [`src/ncslab/README.md`](../src/ncslab/README.md) |
 | `UDPInterfaceFactory` | UDP AE |
 
 Thesycon USBIO factories are **not** in this list.
