@@ -115,6 +115,7 @@ MA 02110-1301  USA
         <dependency org="org.bytedeco" name="javacpp" rev="1.5.10" />
 
         <dependency org="com.neuronrobotics" name="nrjavaserial" rev="3.13.0" />
+        <dependency org="com.fazecast" name="jSerialComm" rev="2.11.0" />
         <dependency org="com.kitfox.svg" name="svg-salamander" rev="1.0" />
         <dependency org="org.tallison" name="jmatio" rev="1.2" />
         <!--
