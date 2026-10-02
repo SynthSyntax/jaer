@@ -205,6 +205,7 @@ import net.sf.jaer.hardwareinterface.udp.NetworkChip;
 import net.sf.jaer.hardwareinterface.udp.UDPInterface;
 import ncslab.chip.EEBVGenX320;
 import ncslab.serial.EEBVHardwareInterface;
+import ncslab.serial.EEBVLinuxAccessHelp;
 import net.sf.jaer.hardwareinterface.opencv.OpenCvCameraFactory;
 import net.sf.jaer.hardwareinterface.opencv.OpenCvCameraHardwareInterface;
 import net.sf.jaer.chip.opencv.OpenCvFrameCamera;
@@ -1707,7 +1708,6 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
     private boolean loggedStartupBindMiss;
     /** WAITING polls every ~1 s; log the OpenCV skip once per skip period. */
     private boolean loggedSkipOpenCvAutobind;
-    private boolean loggedSkipEebvAutobind;
 
     private boolean bindRememberedInterfaceIfPossible(int ninterfaces) {
         if (!autobindOnWaiting && !SessionCameraOpenCoordinator.hasOpenGrant(this)) {
@@ -2086,14 +2086,6 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
                 if (!loggedSkipOpenCvAutobind) {
                     log.info("not auto-opening OpenCV camera (select it from Interface)");
                     loggedSkipOpenCvAutobind = true;
-                }
-                return false;
-            }
-            if (hw instanceof EEBVHardwareInterface) {
-                // opening sends text to the port; never do that to an unconfirmed serial device
-                if (!loggedSkipEebvAutobind) {
-                    log.info("not auto-opening serial port " + hw + " (select it from Interface)");
-                    loggedSkipEebvAutobind = true;
                 }
                 return false;
             }
@@ -5798,6 +5790,9 @@ public class AEViewer extends javax.swing.JFrame implements PropertyChangeListen
                 log.log(Level.FINE, e.toString(), e);
                 if (aemon instanceof PropheseeHardwareInterface) {
                     PropheseeHardwareInterface.maybeShowLinuxUdevAccessDialog(this, e);
+                }
+                if (aemon instanceof EEBVHardwareInterface) {
+                    EEBVLinuxAccessHelp.maybeShowDialog(this, e);
                 }
                 if (!isNotSupportedDuringUsbResettle(e)) {
                     WinUsbDriverHelp.maybeShowDialog(this, aemon, e);

@@ -28,10 +28,12 @@ public class EEBVGenX320 extends AETemporalConstastRetina implements Serializabl
 
     public EEBVGenX320() {
         setName("EEBVGenX320");
+        setDefaultPreferencesFileForFamily("EEBVGenX320");
         setSizeX(PsGx320Parser.WIDTH);
         setSizeY(PsGx320Parser.HEIGHT);
         setNumCellTypes(2);
         setEventExtractor(new Extractor(this));
+        setBiasgen(new EEBVConfig(this));
         getRenderer().ensurePixmapReadyForDisplay();
 
         EventOnlyChipDisplay.apply(this);

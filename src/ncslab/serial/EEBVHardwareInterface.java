@@ -17,6 +17,9 @@ import net.sf.jaer.aemonitor.AEListener;
 import net.sf.jaer.aemonitor.AEMonitorInterface;
 import net.sf.jaer.aemonitor.AEPacketRaw;
 import net.sf.jaer.aemonitor.DroppedDataInfo;
+import net.sf.jaer.biasgen.Biasgen;
+import net.sf.jaer.biasgen.BiasgenHardwareInterface;
+import ncslab.chip.EEBVConfig;
 import net.sf.jaer.chip.AEChip;
 import net.sf.jaer.event.ImuPacket;
 import net.sf.jaer.event.PacketBundle;
@@ -30,7 +33,7 @@ import net.sf.jaer.hardwareinterface.usb.UsbPolarityBundleBuilder;
  * ASCII commands out, {@link PsGx320Parser} stream in; delivers typed polarity
  * and IMU packets.
  */
-public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.Sink {
+public class EEBVHardwareInterface implements AEMonitorInterface, BiasgenHardwareInterface, PsGx320Parser.Sink {
 
     private static final Logger log = Logger.getLogger("net.sf.jaer");
     private static final Set<String> OPEN_PORTS = new CopyOnWriteArraySet<>();
@@ -45,6 +48,11 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
     public static final String CMD_START_STREAM = "+";
     public static final String CMD_STOP_STREAM = "-";
     public static final String CMD_HELP = "??";
+    /** Firmware name in the reply to {@link #CMD_HELP}. */
+    public static final String IDENTITY = "PSGX320";
+    /** Marks an open that failed because the OS denied access to the port. */
+    public static final String ACCESS_DENIED = "permission denied";
+    private static final int EACCES = 13;
 
     private static final int READ_BUFFER_BYTES = 1 << 16;
     private static final int READ_TIMEOUT_MS = 100;
@@ -87,6 +95,7 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
     // guarded by pool
     private int eventsInWriteBuffer;
     private long exceptionsSinceLog;
+    private final int[] lastSentBiases = new int[EEBVConfig.NUM_BIASES];
     private long lastExceptionLogNanos;
     private ImuPacket imuInWriteBuffer;
     private long deviceDropsAtLastAcquire;
@@ -187,12 +196,14 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
             error = candidate.getLastErrorCode();
         }
         if (p == null) {
-            throw new HardwareInterfaceException("Could not open serial port " + portName
-                    + " (error " + error + "). On Linux the user needs access to the port:"
-                    + " add yourself to the group that owns it (uucp or dialout), or chmod 666 the /dev/tty* device.");
+            throw new HardwareInterfaceException("Could not open serial port " + portName + " (error " + error
+                    + (error == EACCES ? ", " + ACCESS_DENIED + "). The user needs access to the port:"
+                            + " join the group that owns it (uucp or dialout) or install a udev rule."
+                            : ")."));
         }
         port = p;
         closing = false;
+        java.util.Arrays.fill(lastSentBiases, -1);
         OPEN_PORTS.add(portName);
         open.set(true);
         try {
@@ -225,11 +236,11 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
             }
         }
         String text = sb.toString().strip();
-        if (text.isEmpty()) {
-            throw new HardwareInterfaceException("No reply to \"" + CMD_HELP + "\" on " + portName
-                    + "; is this an eEBV / PSGX320 sensor?");
+        if (!text.contains(IDENTITY)) {
+            throw new HardwareInterfaceException("Device on " + portName + " did not identify as " + IDENTITY
+                    + " in its reply to \"" + CMD_HELP + "\"; not an eEBV sensor?");
         }
-        log.info("eEBV on " + portName + " replied to " + CMD_HELP + ":\n" + text);
+        log.fine("eEBV on " + portName + " replied to " + CMD_HELP + ":\n" + text);
     }
 
     /** Reads until the port has been quiet for one read timeout or {@code maxMs} passed. */
@@ -554,7 +565,7 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
                 capture.add(line);
             }
         }
-        log.info("eEBV " + portName + ": " + line);
+        log.fine("eEBV " + portName + ": " + line);
     }
 
     @Override
@@ -571,6 +582,36 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
             exceptionsSinceLog = 0;
             lastExceptionLogNanos = now;
         }
+    }
+
+    @Override
+    public void setPowerDown(boolean powerDown) throws HardwareInterfaceException {
+        sendCommand(powerDown ? "!E-" : "!E+");
+    }
+
+    /** Sends the biases that differ from what this session last sent. */
+    @Override
+    public synchronized void sendConfiguration(Biasgen biasgen) throws HardwareInterfaceException {
+        if (!(biasgen instanceof EEBVConfig config) || !open.get()) {
+            return;
+        }
+        final int[] biases = config.getBiases();
+        for (int i = 0; i < biases.length; i++) {
+            if (biases[i] != lastSentBiases[i]) {
+                sendCommand("!B" + i + "=" + biases[i]);
+                lastSentBiases[i] = biases[i];
+            }
+        }
+    }
+
+    @Override
+    public void flashConfiguration(Biasgen biasgen) throws HardwareInterfaceException {
+        log.info("flashConfiguration not supported for eEBV");
+    }
+
+    @Override
+    public byte[] formatConfigurationBytes(Biasgen biasgen) {
+        return new byte[0];
     }
 
     @Override
