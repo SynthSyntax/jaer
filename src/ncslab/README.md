@@ -76,8 +76,11 @@ words at all can therefore read short until the next correction.
 - Word layout, text/word framing, replies interleaved while streaming.
 - Timestamp tick is 1 us and tracks host time; streaming starts about 0.65 s
   after `+`.
-- Output was a steady ~110k events/s in a busy scene, which looks like a
-  firmware or link limit; the scene rate above that is not delivered.
+- Live view in AEViewer, pause/resume, close and reopen, AEDAT-4 record
+  (17 M events in 26 s, about 650k events/s) and read-back.
+- At high event rates the sensor sends "DCMI packet drop" exception words
+  every few hundred microseconds: events are lost on the sensor board before
+  the host. jAER counts them (`getDeviceDropCount`) and flags dropped data.
 
 ## Not yet checked
 
