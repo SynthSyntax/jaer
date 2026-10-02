@@ -54,7 +54,7 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
         help.weightx = 1.0;
         help.fill = GridBagConstraints.HORIZONTAL;
         help.insets = new Insets(4, 4, 8, 4);
-        add(new JLabel("<html>GenX320 bias values (0–127) sent to the sensor <b>while you drag</b>, as "
+        add(new JLabel("<html>GenX320 bias values (0–255) sent to the sensor <b>while you drag</b>, as "
                 + "<code>!B&lt;i&gt;=&lt;v&gt;</code>.<br>"
                 + "Prefer the <b>User-Friendly Controls</b> tab for threshold, ON/OFF balance and filters.<br>"
                 + "<b>Revert</b> or <b>File → Load settings</b> restores saved preferences/XML."), help);
@@ -130,7 +130,7 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
     private void addBiasRow(int row, final int bias) {
         final JLabel valueLabel = new JLabel();
         final JSlider slider = new JSlider(EEBVConfig.BIAS_MIN, EEBVConfig.BIAS_MAX, EEBVConfig.BIAS_MIN);
-        slider.setMajorTickSpacing(32);
+        slider.setMajorTickSpacing(64);
         slider.setPaintTicks(true);
         sliders[bias] = slider;
         valueLabels[bias] = valueLabel;

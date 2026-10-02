@@ -50,8 +50,8 @@ public class EEBVConfig extends Biasgen implements ChipControlPanel, DVSTweaks {
     private static final int[] DEFAULTS = {61, 34, 63, 0, 30, 51, 33, 57, 10, 56, 116, 164};
 
     public static final int BIAS_MIN = 0;
-    /** The firmware's presets top out at 127; values above wrap in the sensor. */
-    public static final int BIAS_MAX = 127;
+    /** 8-bit: {@code !B4=300} reads back as 44, and sm_pdy defaults to 164. */
+    public static final int BIAS_MAX = 255;
 
     /** Indexed property: bias index, old value, new value. */
     public static final String PROPERTY_BIAS = "eebvBias";

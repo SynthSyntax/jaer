@@ -98,8 +98,7 @@ Scene: indoor, static camera, about 125k events/s per polarity at defaults.
 | `hpf` (default 0) | higher = fewer events: 60 → 140k/s total, 120 → 24k/s |
 | `refr` (default 10) | weak, not monotonic: 0 → 150k/s total, 40–70 → 240k/s, 130 → 170k/s |
 
-The firmware presets use values up to 127 and `!B4=300` reads back as 44, so
-biases are treated as 0–127.
+Biases are 8-bit: `!B4=300` reads back as 44, and `sm_pdy` defaults to 164.
 
 ## Not yet checked
 
