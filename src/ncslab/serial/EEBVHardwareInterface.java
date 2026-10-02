@@ -37,6 +37,7 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
 
     /** The quickstart guide asks for 12 Mbps; a virtual port ignores the value. */
     public static final int BAUD = 12_000_000;
+    private static final int FALLBACK_BAUD = 4_000_000;
     /** {@code -Djaer.eebv.baud=N} overrides {@link #BAUD}, e.g. behind a slower UART bridge. */
     public static final String BAUD_PROP = "jaer.eebv.baud";
     /** {@code -Djaer.eebv.rtscts=false} opens the port without RTS/CTS handshaking. */
@@ -159,21 +160,34 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
         if (OPEN_PORTS.contains(portName)) {
             throw new HardwareInterfaceException("Serial port " + portName + " is already open");
         }
-        SerialPort p;
-        try {
-            p = SerialPort.getCommPort(portName);
-        } catch (RuntimeException e) {
-            throw new HardwareInterfaceException("No serial port " + portName + ": " + e.getMessage());
-        }
-        p.setComPortParameters(Integer.getInteger(BAUD_PROP, BAUD), 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
         final boolean rtscts = !"false".equalsIgnoreCase(System.getProperty(RTSCTS_PROP, "true"));
-        p.setFlowControl(rtscts ? (SerialPort.FLOW_CONTROL_RTS_ENABLED | SerialPort.FLOW_CONTROL_CTS_ENABLED)
-                : SerialPort.FLOW_CONTROL_DISABLED);
-        p.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, READ_TIMEOUT_MS, 0);
-        if (!p.openPort()) {
+        SerialPort p = null;
+        int error = 0;
+        // Linux cdc_acm rejects the non-standard 12 Mbps rate; the USB link ignores
+        // the value, so fall back to the highest standard rate.
+        for (int baud : new int[]{Integer.getInteger(BAUD_PROP, BAUD), FALLBACK_BAUD}) {
+            SerialPort candidate;
+            try {
+                candidate = SerialPort.getCommPort(portName);
+            } catch (RuntimeException e) {
+                throw new HardwareInterfaceException("No serial port " + portName + ": " + e.getMessage());
+            }
+            candidate.setComPortParameters(baud, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+            candidate.setFlowControl(rtscts
+                    ? (SerialPort.FLOW_CONTROL_RTS_ENABLED | SerialPort.FLOW_CONTROL_CTS_ENABLED)
+                    : SerialPort.FLOW_CONTROL_DISABLED);
+            candidate.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, READ_TIMEOUT_MS, 0);
+            if (candidate.openPort()) {
+                p = candidate;
+                log.fine("eEBV " + portName + " opened at " + baud + " baud");
+                break;
+            }
+            error = candidate.getLastErrorCode();
+        }
+        if (p == null) {
             throw new HardwareInterfaceException("Could not open serial port " + portName
-                    + " (error " + p.getLastErrorCode() + "). On Linux the user needs access to the port:"
-                    + " add yourself to the dialout group, or chmod 666 the /dev/tty* device.");
+                    + " (error " + error + "). On Linux the user needs access to the port:"
+                    + " add yourself to the group that owns it (uucp or dialout), or chmod 666 the /dev/tty* device.");
         }
         port = p;
         closing = false;

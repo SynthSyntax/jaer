@@ -21,10 +21,14 @@ public final class EEBVHardwareInterfaceFactory implements HardwareInterfaceFact
     private static final EEBVHardwareInterfaceFactory INSTANCE = new EEBVHardwareInterfaceFactory();
 
     /**
-     * USB VID/PID pairs of the sensor's serial bridge, as {@code (vid << 16) | pid}.
-     * While empty, every USB serial port is offered.
+     * USB VID/PID pairs the sensor enumerates with, as {@code (vid << 16) | pid}.
+     * Firmware V0.5 is a TinyUSB CDC-ACM device with TinyUSB's example ids,
+     * which other TinyUSB boards may share.
      */
-    private static final int[] KNOWN_BRIDGES = {};
+    private static final int[] KNOWN_BRIDGES = {(0xcafe << 16) | 0x4001};
+
+    /** {@code -Djaer.eebv.allPorts=true} offers every USB serial port, e.g. a sensor behind a UART bridge. */
+    public static final String ALL_PORTS_PROP = "jaer.eebv.allPorts";
 
     private volatile List<SerialPort> snapshot = List.of();
 
@@ -42,7 +46,7 @@ public final class EEBVHardwareInterfaceFactory implements HardwareInterfaceFact
             // not a USB serial port (e.g. motherboard ttyS*)
             return false;
         }
-        if (KNOWN_BRIDGES.length == 0) {
+        if (Boolean.getBoolean(ALL_PORTS_PROP)) {
             return true;
         }
         final int key = (vid << 16) | (pid & 0xffff);
