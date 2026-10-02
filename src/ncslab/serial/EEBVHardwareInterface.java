@@ -86,6 +86,8 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
 
     // guarded by pool
     private int eventsInWriteBuffer;
+    private long exceptionsSinceLog;
+    private long lastExceptionLogNanos;
     private ImuPacket imuInWriteBuffer;
     private long deviceDropsAtLastAcquire;
     private boolean deviceDroppedLastAcquire;
@@ -560,7 +562,15 @@ public class EEBVHardwareInterface implements AEMonitorInterface, PsGx320Parser.
         if (id == PsGx320Parser.EXC_DCMI_DROP || id == PsGx320Parser.EXC_SPI_USB_DROP) {
             deviceDropCount.incrementAndGet();
         }
-        log.fine("eEBV " + portName + " exception id=" + id + " info=" + info + " t=" + timestampUs);
+        // an overloaded sensor reports drops every few hundred microseconds
+        exceptionsSinceLog++;
+        final long now = System.nanoTime();
+        if (now - lastExceptionLogNanos >= 1_000_000_000L) {
+            log.fine("eEBV " + portName + ": " + exceptionsSinceLog + " exception word(s), last id=" + id
+                    + " info=" + info + " t=" + timestampUs + ", drops since open=" + deviceDropCount.get());
+            exceptionsSinceLog = 0;
+            lastExceptionLogNanos = now;
+        }
     }
 
     @Override
