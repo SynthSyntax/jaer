@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -53,7 +54,7 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
         help.weightx = 1.0;
         help.fill = GridBagConstraints.HORIZONTAL;
         help.insets = new Insets(4, 4, 8, 4);
-        add(new JLabel("<html>GenX320 bias values (0–255) sent to the sensor <b>while you drag</b>, as "
+        add(new JLabel("<html>GenX320 bias values (0–127) sent to the sensor <b>while you drag</b>, as "
                 + "<code>!B&lt;i&gt;=&lt;v&gt;</code>.<br>"
                 + "Prefer the <b>User-Friendly Controls</b> tab for threshold, ON/OFF balance and filters.<br>"
                 + "<b>Revert</b> or <b>File → Load settings</b> restores saved preferences/XML."), help);
@@ -62,11 +63,17 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
             addBiasRow(row++, i);
         }
 
-        final JPanel buttons = new JPanel();
+        final JPanel buttons = new JPanel(new java.awt.GridLayout(0, 3, 6, 4));
         buttons.setBorder(BorderFactory.createTitledBorder("Sensor"));
         buttons.add(button("Read biases from sensor",
                 "Reads the values the sensor is using (?B) and makes them the current settings",
                 this::readBiasesFromSensor));
+        final JComboBox<String> presets = new JComboBox<>(EEBVConfig.PRESETS);
+        presets.setToolTipText("Bias presets built into the sensor firmware");
+        buttons.add(presets);
+        buttons.add(button("Load preset",
+                "Loads the chosen firmware bias preset (!BD<n>) and reads the values back",
+                () -> loadPreset(presets.getSelectedIndex())));
         buttons.add(button("Mask hot pixels",
                 "Keep the sensor still in a static scene: detects pixels that fire continuously and disables"
                 + " them (!EMH). Forgotten when the sensor is reset or unplugged.",
@@ -123,7 +130,7 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
     private void addBiasRow(int row, final int bias) {
         final JLabel valueLabel = new JLabel();
         final JSlider slider = new JSlider(EEBVConfig.BIAS_MIN, EEBVConfig.BIAS_MAX, EEBVConfig.BIAS_MIN);
-        slider.setMajorTickSpacing(64);
+        slider.setMajorTickSpacing(32);
         slider.setPaintTicks(true);
         sliders[bias] = slider;
         valueLabels[bias] = valueLabel;
@@ -207,13 +214,25 @@ public class EEBVControlPanel extends JPanel implements PropertyChangeListener {
     }
 
     private void readBiasesFromSensor() {
+        readBiasesFromSensor(null);
+    }
+
+    private void loadPreset(int preset) {
+        readBiasesFromSensor("!BD" + preset);
+    }
+
+    /** Optionally sends {@code before}, then adopts the sensor's bias values. */
+    private void readBiasesFromSensor(final String before) {
         final EEBVHardwareInterface hw = openInterface();
         if (hw == null) {
             return;
         }
-        appendReply("> ?B");
+        appendReply("> " + (before == null ? "" : before + ", ") + "?B");
         final Thread t = new Thread(() -> {
             try {
+                if (before != null) {
+                    hw.sendCommandForReply(before, 400);
+                }
                 final List<String> reply = hw.sendCommandForReply("?B", 800);
                 final int[] values = new int[EEBVConfig.NUM_BIASES];
                 Arrays.fill(values, -1);

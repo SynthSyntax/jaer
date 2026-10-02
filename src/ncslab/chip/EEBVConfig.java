@@ -50,18 +50,26 @@ public class EEBVConfig extends Biasgen implements ChipControlPanel, DVSTweaks {
     private static final int[] DEFAULTS = {61, 34, 63, 0, 30, 51, 33, 57, 10, 56, 116, 164};
 
     public static final int BIAS_MIN = 0;
-    public static final int BIAS_MAX = 255;
+    /** The firmware's presets top out at 127; values above wrap in the sensor. */
+    public static final int BIAS_MAX = 127;
 
     /** Indexed property: bias index, old value, new value. */
     public static final String PROPERTY_BIAS = "eebvBias";
     /** Fired with the new tweak value in −1…1. */
     public static final String PROPERTY_HIGHPASS_TWEAK = "highpass";
 
-    // Offset from the saved value at tweak +1 / −1, in bias counts.
+    // Offset from the saved value at tweak +1 / −1, in bias counts. Directions and
+    // useful ranges were measured on a sensor with firmware V0.5: from the default
+    // of 30, diff_on 10 gave about 100x the ON rate of diff_on 55; the pixels stop
+    // responding below fo of about 16; refr has a weak effect that peaks near 70.
     static final int DIFF_SPAN = 25;
-    static final int FO_SPAN = 30;
+    static final int FO_SPAN = 15;
     static final int REFR_SPAN = 60;
-    static final int HPF_SPAN = 60;
+    static final int HPF_SPAN = 127;
+
+    /** Bias presets built into the firmware ({@code ?BD}), loaded with {@code !BD<n>}. */
+    public static final String[] PRESETS = {"default", "Low-light detection", "Drone tracking",
+        "High-speed motion, object counting, PSM", "LED tracking", "Active marker detection"};
 
     private static final String PREFS_BIAS = "EEBVConfig.bias.";
 

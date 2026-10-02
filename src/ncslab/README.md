@@ -41,10 +41,14 @@ Text commands end in LF. jAER uses:
 | `+` | start streaming events |
 | `-` | stop streaming |
 
-Other commands from the quickstart guide (`?B` biases, `!L=+` LED, `!EMH`
-hot-pixel detection, `!EM-<y>,<x>`, `!EMT`) can be sent with
-`EEBVHardwareInterface.sendCommand` / `sendCommandForReply`; there is no
-control panel yet. Replies are logged at INFO with the prefix `eEBV <port>:`.
+Biases are set with `!B<i>=<v>`. The Biases window (`EEBVConfig`) has
+user-friendly sliders, the 12 raw biases, the firmware bias presets (`!BD<n>`),
+hot-pixel masking (`!EMH`, `!EMC`), LED, and a free command box. Replies are
+logged at FINE with the prefix `eEBV <port>:`.
+
+If the eEBV is the only camera found it opens automatically; the driver
+refuses a device whose `??` reply does not contain `PSGX320`. With other
+cameras attached, choose it from the Interface menu.
 
 Stream: at a word boundary, a byte with the top bit clear starts a text line
 (to LF); a byte with the top bit set starts a 4-byte big-endian word.
@@ -81,6 +85,21 @@ words at all can therefore read short until the next correction.
 - At high event rates the sensor sends "DCMI packet drop" exception words
   every few hundred microseconds: events are lost on the sensor board before
   the host. jAER counts them (`getDeviceDropCount`) and flags dropped data.
+
+## Bias behaviour measured on the sensor (firmware V0.5)
+
+Scene: indoor, static camera, about 125k events/s per polarity at defaults.
+
+| Bias | Effect |
+|------|--------|
+| `diff_on` (default 30) | higher = fewer ON events: 10 → 1.4 M/s, 55 → 14k/s, 90 → 1.7k/s |
+| `diff_off` (default 33) | higher = fewer OFF events: 10 → 1.3 M/s, 55 → 12k/s, 90 → 0.2k/s |
+| `fo` (default 34) | higher = more bandwidth and events; 28 → 80k/s total, 22 → 16k/s, 16 → 1.6k/s, 10 and below → no events |
+| `hpf` (default 0) | higher = fewer events: 60 → 140k/s total, 120 → 24k/s |
+| `refr` (default 10) | weak, not monotonic: 0 → 150k/s total, 40–70 → 240k/s, 130 → 170k/s |
+
+The firmware presets use values up to 127 and `!B4=300` reads back as 44, so
+biases are treated as 0–127.
 
 ## Not yet checked
 
